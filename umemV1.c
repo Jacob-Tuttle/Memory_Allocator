@@ -7,7 +7,7 @@
 
 static int allocAlgo = 0; //Which alllocation algorithm was selected on memory initilization
 static void* headOfFree = NULL; //Pointer to the start of free space
-static void* headofMemSpace = NULL;
+static void* headofMemSpace = NULL; //Pointer to the start of VM space
 static int memInit = 0; //Whether memory has already been initilized
 
 //Will represent a node in our linked list
