@@ -13,7 +13,6 @@ static int memInit = 0;
 struct memChunk {
     int isFree;
     size_t size;
-    struct memChunk* prev; //8 bytes
     struct memChunk* next; //8 bytes
 };
 
@@ -41,7 +40,6 @@ int umeminit(size_t sizeOfRegion, int allocationAlgo) {
 
         head = (struct memChunk*)headOfFree;
         head->isFree = 0;
-        head->prev = NULL;
         head->next = NULL;
         head->size = total_size;
 
@@ -71,14 +69,15 @@ void* Best_Fit(size_t size){
         //enough space for allocation
         printf("\nCurrent Size: %ld Free: %d", cur->size, cur->isFree);
         if(cur->size >= size && cur->isFree == 0){
+            if(noFit == 1)
+                tempSmallest = cur->size;
             noFit = 0; //fit found
-            tempSmallest = cur->size;
             if(tempSmallest > cur->size){
                 //update smallest as long as
                 //its greater than or equal to 8 bytes
                 if(cur->size >= 8){
                     tempSmallest= cur->size;
-                    printf(" curretn smallest: %d", tempSmallest);
+                    printf(" current smallest: %d", tempSmallest);
                 }
             }
         }
@@ -101,7 +100,6 @@ void* Best_Fit(size_t size){
 
                 newBlock->isFree = 0;
                 newBlock->next = cur->next;
-                newBlock->prev = cur;
                 newBlock->size = cur->size - sizeof(struct memChunk) - adjustedSize;
                 printf(" New Free: %ld",newBlock->size);
                 cur->next = newBlock;
@@ -165,7 +163,6 @@ void* Worst_Fit(size_t size){
 
                 newBlock->isFree = 0;
                 newBlock->next = cur->next;
-                newBlock->prev = cur;
                 newBlock->size = cur->size - sizeof(struct memChunk) - adjustedSize;
                 printf(" New Free: %ld",newBlock->size);
                 cur->next = newBlock;
@@ -195,7 +192,6 @@ void* First_Fit(size_t size){
 
             newBlock->isFree = 0;
             newBlock->next = cur->next;
-            newBlock->prev = cur;
             newBlock->size = cur->size - sizeof(struct memChunk) - adjustedSize;
             printf(" New Free: %ld",newBlock->size);
 
