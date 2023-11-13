@@ -310,7 +310,7 @@ void Coalesce(){
         }
     }
 
-    // Check if the last block needs coalescing
+    //Adds headers bytes back to free space after coalescing
     if (cur != NULL && cur->next == NULL && cur->isFree == 0) {
         cur->size += sizeof(struct memChunk);
         cur->next = NULL;
