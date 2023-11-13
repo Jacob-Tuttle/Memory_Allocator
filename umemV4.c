@@ -22,7 +22,7 @@ struct memChunk* head = NULL;
 void printMemoryBlock(){
     struct memChunk* cur = head;
     while(cur != NULL){
-        printf("\nCurrent Size: %ld Free: %d\n", cur->size ,cur->isFree);
+        printf("\n\nCurrent Size: %ld Free: %d\n\n", cur->size ,cur->isFree);
         cur = cur->next;
     }
 }
@@ -71,8 +71,8 @@ void* Best_Fit(size_t size){
         //enough space for allocation
         printf("\nCurrent Size: %ld Free: %d", cur->size, cur->isFree);
         if(cur->size >= size && cur->isFree == 0){
-            tempSmallest = cur->size;
             noFit = 0; //fit found
+            tempSmallest = cur->size;
             if(tempSmallest > cur->size){
                 //update smallest as long as
                 //its greater than or equal to 8 bytes
@@ -90,6 +90,7 @@ void* Best_Fit(size_t size){
         return NULL;
     }
     sizeSmallest = tempSmallest;
+    printf("\nSMALLEST: %d\n", sizeSmallest);
     cur = head;
     while(cur != NULL){
         if(cur->size == sizeSmallest){
@@ -104,7 +105,7 @@ void* Best_Fit(size_t size){
                 newBlock->size = cur->size - sizeof(struct memChunk) - adjustedSize;
                 printf(" New Free: %ld",newBlock->size);
                 cur->next = newBlock;
-                cur->size = size;
+                cur->size = adjustedSize;
             }
 
             cur->isFree = 1;
@@ -126,7 +127,7 @@ void* Worst_Fit(size_t size){
 
     struct memChunk* cur = head;
     int sizeLargest = 0;
-    int tempLargest = 0;
+    int tempLargest = cur->size;
 
     //find best
     int noFit = 1; //Flag (1) no chunk of correct size (0) space avaliable
@@ -135,7 +136,6 @@ void* Worst_Fit(size_t size){
         //enough space for allocation
         printf("\nCurrent Size: %ld Free: %d", cur->size, cur->isFree);
         if(cur->size >= size && cur->isFree == 0){
-            tempLargest = cur->size;
             noFit = 0; //fit found
             if(tempLargest < cur->size){
                 //update smallest as long as
@@ -154,6 +154,7 @@ void* Worst_Fit(size_t size){
         return NULL;
     }
     sizeLargest = tempLargest;
+    printf("\nLARGEST: %d\n", sizeLargest);
     cur = head;
     while(cur != NULL){
         if(cur->size == sizeLargest){
@@ -168,7 +169,7 @@ void* Worst_Fit(size_t size){
                 newBlock->size = cur->size - sizeof(struct memChunk) - adjustedSize;
                 printf(" New Free: %ld",newBlock->size);
                 cur->next = newBlock;
-                cur->size = size;
+                cur->size = adjustedSize;
             }
 
             cur->isFree = 1;
@@ -179,6 +180,35 @@ void* Worst_Fit(size_t size){
     }
 
     //Should never be reached
+    return NULL;
+}
+
+void* First_Fit(size_t size){
+
+    struct memChunk* cur = head;
+
+    while(cur != NULL){
+        //split block
+        if(cur->size > size){
+            size_t adjustedSize = size + (8 - (size % 8)) % 8;
+            struct memChunk* newBlock = (struct memChunk*)((char*)cur + sizeof(struct memChunk) + adjustedSize);
+
+            newBlock->isFree = 0;
+            newBlock->next = cur->next;
+            newBlock->prev = cur;
+            newBlock->size = cur->size - sizeof(struct memChunk) - adjustedSize;
+            printf(" New Free: %ld",newBlock->size);
+
+            cur->next = newBlock;
+            cur->size = adjustedSize;
+            cur->isFree = 1;
+            //returns start of memChunk
+            return (void*)((char*)cur+sizeof(struct memChunk));
+        }
+        cur = cur->next;
+    }
+
+    //Block of correct size not found
     return NULL;
 }
 
@@ -197,38 +227,51 @@ void* umalloc(size_t size) {
     case 2:
         return Worst_Fit(size);
 
-    //case 3
+    //First Fit
+    case 3:
+        return First_Fit(size);
 
-    //case 4
+    //Next Fit
     }
 
 
     return NULL;
 }
 
+void Coalesce(){
+    struct memChunk* cur = head;
 
+    while (cur != NULL && cur->next != NULL) {
+        if ((cur->isFree == 0 && cur->next->isFree == 0)) {
+            cur->size += cur->next->size;
+            cur->next = cur->next->next;
+        } else {
+            cur = cur->next;
+        }
+    }
+
+    // Check if the last block needs coalescing
+    if (cur != NULL && cur->next == NULL && cur->isFree == 0) {
+        cur->size += sizeof(struct memChunk);
+        cur->next = NULL;
+    }
+}
 
 int ufree(void *ptr) {
     struct memChunk* cur = head;
 
     while (cur != NULL) {
         if ((void*)cur == (ptr - sizeof(struct memChunk))) {
-            printf("Freeing block: %p\n", ptr);
+            printf("Freeing block: %p\n", cur);
             cur->isFree = 0;
-            //Coalesce();
-
-            // Check if the first block is coalesced, update head accordingly
-            if (cur->prev == NULL) {
-                head = cur;
-            }
+            Coalesce();
 
             printf("Block freed successfully\n");
             return 0;
         }
         cur = cur->next;
     }
-
-    // failed to free chunk
+    //failed to free chunk
     printf("Failed to free block: %p\n", ptr);
     return -1;
 }
