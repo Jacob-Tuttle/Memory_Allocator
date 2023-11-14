@@ -6,9 +6,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+//Only modified within umeminit
 static int allocAlgo = 0; //Allocation method selected either (1,2,3,4)
-static void* headOfFree = NULL; //Keeps track of where to start search for Next_Fit
 static int memInit = 0; //Flag memory slab has already been allocated
+
+//Only modified within umeminit, next_fit, and split
+static void* headOfFree = NULL; //Keeps track of where to start search for Next_Fit
 
 /*
 Represents either a unallocated or allocated block of memory
